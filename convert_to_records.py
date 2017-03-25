@@ -13,18 +13,18 @@ import manage_images
 
 IMG_CLASSES = ['cat', 'dog']
 
-DATA_DIR = 'data_small/'
-TRAIN_DATA_PATH = 'data_small/train/'
-TEST_DATA_PATH = 'data_small/test/'
+DATA_DIR = '../data/'
+TRAIN_DATA_PATH = '../data/train/'
+#TEST_DATA_PATH = '../data/test/'
 
 IMG_HEIGHT = int(128)
 IMG_WIDTH = int(128)
 IMG_CHANNELS = 3
-NUM_FILES_DATASET = 22500
-VALIDATION_SET_FRACTION = 0.1
+NUM_FILES_DATASET = 25000
+VALIDATION_SET_FRACTION = 0.3
 NUM_TRAIN_EXAMPLES = int((1 - VALIDATION_SET_FRACTION) * NUM_FILES_DATASET)
 NUM_VALIDATION_EXAMPLES = int((VALIDATION_SET_FRACTION) * NUM_FILES_DATASET)
-NUM_TEST_EXAMPLES = 2500
+#NUM_TEST_EXAMPLES = 2500
 
 
 def _int64_feature(value):
@@ -61,9 +61,9 @@ def convert_to(images, labels, name):
 
 def main(argv):
     train_images, train_labels = manage_images.read_images(TRAIN_DATA_PATH, IMG_CLASSES,
-                                                           IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
-    test_images, test_labels = manage_images.read_images(TEST_DATA_PATH, IMG_CLASSES,
-                                                         IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
+                                                           IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS,shuffle=True)
+    #test_images, test_labels = manage_images.read_images(TEST_DATA_PATH, IMG_CLASSES,
+    #                                                     IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
     ## print(train_labels)
 
     # Generate a validation set.
@@ -72,11 +72,12 @@ def main(argv):
     validation_labels = train_labels[:validation_size]
     train_images = train_images[validation_size:, :, :, :]
     train_labels = train_labels[validation_size:]
+    print(validation_size)
 
     # Convert to Examples and write the result to TFRecords.
     convert_to(train_images, train_labels, 'train')
     convert_to(validation_images, validation_labels, 'validation')
-    convert_to(test_images, test_labels, 'test')
+    #convert_to(test_images, test_labels, 'test')
 
 
 if __name__ == '__main__':

@@ -38,6 +38,12 @@ import ImageProcessor
 
 from PIL import Image, ImageEnhance, ImageFilter
 
+
+#数据读取的相关参数,
+DEFAULT_EPOCH_NUM_LIMIT = None  #None无限制
+DEFAULT_EPOCH_SHUFFLE=True  #每换一次epoch shuffle一次
+
+
 cwd = os.getcwd()
 
 IMG_HEIGHT = convert_to_records.IMG_HEIGHT
@@ -45,164 +51,20 @@ IMG_WIDTH = convert_to_records.IMG_WIDTH
 IMG_CHANNELS = convert_to_records.IMG_CHANNELS
 IMG_PIXELS = IMG_HEIGHT * IMG_WIDTH * IMG_CHANNELS
 
-TRAIN_DATA_DIR='data_small/train/'
-TEST_DATA_DIR='data_small/test/'
-TFR_SAVE_DIR='data_small/'
+TRAIN_DATA_DIR='../data/train/'
+TEST_DATA_DIR='../data/test/'
+TFR_SAVE_DIR='../data/'
 NUM_TRAIN =2000
 NUM_VALI = 1000
 
 IMG_PIXELS2 = 350*350*3;
 
 
-
-
-def get_train_and_vali_data(path=TRAIN_DATA_DIR,num_train=NUM_TRAIN,num_vali=NUM_VALI):
-    '''
-    :return: train data, numpy array, 每一个元素包含一个图片数据(np格式)和对应的lable
-             test data,
-    '''
-    #cat file name
-    NUM_TRAIN_DOGS = num_train / 2
-    NUM_TRAIN_CATS = num_train / 2
-    NUM_VALI_DOGS = num_vali / 2
-    NUM_VALI_CATS = num_vali / 2
-    trainDogImgs=[]
-    trainCatImgs=[]
-    valiDogImgs=[]
-    valiCatImgs=[]
-    trainX=[]
-    trainY=[]
-    valiX=[]
-    valiY=[]
-    #trainX = np.zeros((num_train, ImageProcessor.IMAGE_SIZE_HEIGTH, ImageProcessor.IMAGE_SIZE_WIDTH, img_channels), dtype=np.uint8)
-    #trainY = np.zeros((num_train,), dtype=np.uint8)
-
-    for (i,imgName) in enumerate(os.listdir(path)):
-        if ('dog' in imgName):
-            if (len(trainDogImgs) < NUM_TRAIN_DOGS):
-                trainDogImgs.append([ imgName,1])
-            elif (len(valiDogImgs) < NUM_VALI_DOGS):
-                valiDogImgs.append([imgName,1])
-        if('cat' in imgName):
-            if (len(trainCatImgs) < NUM_TRAIN_CATS):
-                trainCatImgs.append([ imgName,0])
-            elif (len(valiCatImgs) < NUM_VALI_CATS):
-                valiCatImgs.append([ imgName,0])
-        if(len(valiCatImgs)+len(valiDogImgs) ==NUM_VALI):
-            break;
-
-    trainImgs=trainDogImgs + trainCatImgs;
-    valiImgs = valiDogImgs + valiCatImgs;
-
-    random.shuffle(trainImgs)
-
-    for i,img_name_label in enumerate(trainImgs):
-        dat=ImageProcessor.read(TRAIN_DATA_DIR + img_name_label[0])
-        #trainData.append([dat,imgPath[1]])
-        trainX.append(dat)
-        #trainX[i, :, :, :]=dat
-        trainY.append(img_name_label[1])
-    for i,img_name_label in enumerate(valiImgs):
-        dat = ImageProcessor.read(TRAIN_DATA_DIR + img_name_label[0])
-        valiX.append(dat)
-        #valiX[i,:,:,:]=dat
-        valiY.append(img_name_label[1])
-
-    #return np.array(trainData),np.array(testData)
-    return np.array(trainX),np.array(trainY),np.array(valiX),np.array(valiY)
-
-
-def convert_to_tfr(images, labels, name):
-    num_examples = labels.shape[0]
-    if images.shape[0] != num_examples:
-        raise ValueError("Images size %d does not match label size %d." %
-                     (images.shape[0], num_examples))
-    rows = images.shape[1]
-    cols = images.shape[2]
-    depth = images.shape[3]
-
-    filename = join(TFR_SAVE_DIR, name + '.tfrecords')
-    print('Writing', filename)
-    writer = tf.python_io.TFRecordWriter(filename)
-    for index in range(num_examples):
-        image_raw = images[index].tostring()
-        label = labels[index]
-        example = tf.train.Example(features=tf.train.Features(feature={
-            'height': tf.train.Feature(int64_list=tf.train.Int64List(value=[rows])),
-            'width': tf.train.Feature(int64_list=tf.train.Int64List(value=[cols])),
-            'depth': tf.train.Feature(int64_list=tf.train.Int64List(value=[depth])),
-            'label': tf.train.Feature(int64_list=tf.train.Int64List(value=[label])),   # NOT assuming one-hot format of original data
-            'image_raw': tf.train.Feature(bytes_list=tf.train.BytesList(value=[image_raw]))}))
-        writer.write(example.SerializeToString())
-    writer.close()
-
-def read_and_save_data():
-    train_images,train_labels,vali_images,vali_labels=get_train_and_vali_data()
-    #print(train_images.shape)
-    #convert_to_records.convert_to(train_images,train_lables,"train")
-
-    convert_to_tfr(train_images,train_labels,"train")
-    convert_to_tfr(vali_images,vali_labels,"validation")
-
-
-'''
-def save_data_to_tfrecords()
-    writer = tf.python_io.TFRecordWriter("train.tfrecords")
-    for index, name in enumerate(classes):
-        class_path = cwd + name + "/"
-        for img_name in os.listdir(class_path):
-            img_path = class_path + img_name
-                img = Image.open(img_path)
-                img = img.resize((224, 224))
-            img_raw = img.tobytes()              #将图片转化为原生bytes
-            example = tf.train.Example(features=tf.train.Features(feature={
-                "label": tf.train.Feature(int64_list=tf.train.Int64List(value=[index])),
-                'img_raw': tf.train.Feature(bytes_list=tf.train.BytesList(value=[img_raw]))
-            }))
-            writer.write(example.SerializeToString())  #序列化为字符串
-
-
-    writer.close()
-'''
-
-
-
 def read_and_decode(filename_queue):
-    reader = tf.TFRecordReader()
-    _, serialized_example = reader.read(filename_queue)
-    features = tf.parse_single_example(
-        serialized_example,
-        # Defaults are not specified since both keys are required.
-        features={
-            'image_raw': tf.FixedLenFeature([], tf.string),
-            'label': tf.FixedLenFeature([], tf.int64),
-            'height': tf.FixedLenFeature([], tf.int64),
-            'width': tf.FixedLenFeature([], tf.int64),
-            'depth': tf.FixedLenFeature([], tf.int64)
-        })
-
-    image = tf.decode_raw(features['image_raw'], tf.uint8)
-    img_height = tf.cast(features['height'], tf.int32)
-    img_width = tf.cast(features['width'], tf.int32)
-    img_depth = tf.cast(features['depth'], tf.int32)
-    # Convert label from a scalar uint8 tensor to an int32 scalar.
-    label = tf.cast(features['label'], tf.int32)
-
-    image.set_shape([IMG_PIXELS])
-    image = tf.reshape(image, [IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS])
-
-    # Convert from [0, 255] -> [-0.5, 0.5] floats.
-    image = tf.cast(image, tf.float32) * (1. / 255) - 0.5
-
-    return image, label
-
-
-
-def read_and_decode2(filename):
-    #params: tfrecords文件名
+    #params: filename， tensorflow中的队列，pop出tfrecords里记录的文件名
     #使用tensorflow队列高速读取文件,是符号类型，在sess.run()时才启动
     #根据文件名生成一个队列
-    filename_queue = tf.train.string_input_producer([filename])
+    #filename_queue = tf.train.string_input_producer([filename])
 
     reader = tf.TFRecordReader()
     _, serialized_example = reader.read(filename_queue)   #返回文件名和文件
@@ -216,55 +78,79 @@ def read_and_decode2(filename):
                                        })
 
     img = tf.decode_raw(features['image_raw'], tf.uint8)
-    img_height = tf.cast(features['height'], tf.int32)
-    img_width = tf.cast(features['width'], tf.int32)
-    img_depth = tf.cast(features['depth'], tf.int32)
     #img = tf.reshape(img, [224, 224, 3])
-
-
-    img.set_shape(IMG_PIXELS)
+    img.set_shape([IMG_PIXELS])
     img = tf.reshape(img, [IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS])
     img = tf.cast(img, tf.float32) * (1. / 255) - 0.5
     label = tf.cast(features['label'], tf.int32)
 
     return img, label
 
-def test_read_tfrecords():
-    # 启动tf.Session后，tfrecords将不断pop出文件名
-    tfr_fn = 'data_small/train.tfrecords'
-    img, label = read_and_decode2(tfr_fn)
-    # 使用shuffle_batch可以随机打乱输入
+def read_tfr_queue(tfr_fn, batch_size, num_epochs=DEFAULT_EPOCH_NUM_LIMIT, shuffle=DEFAULT_EPOCH_SHUFFLE):
+    '''
+    产生batch_size的数据，以tensorflow的队列形式, 需要在session中启动，每run一次，出一个batch
+    :param tfr_fn: tfrecords文件路径及文件名
+    :param batch_size:
+    :param num_epochs: 限制队列产出所有数据轮数，若不设置，若无数轮。
+    :param shuffle: 若为true, 每换一次epochs，都打乱一下数据
+    :return:batch数据
+    '''
+    with tf.name_scope('read_tfr_queue'):
+        filename_queue = tf.train.string_input_producer(
+            [tfr_fn],num_epochs=num_epochs,shuffle=shuffle)
+
+
+    img, label = read_and_decode(filename_queue)
+    # min_after_dequeue,出队列后，队列最小有多长。与train数据、batch_size有关。capacity要比min_aft... 要大至少3个batch_size
+    # bacth_size，一次出8张，为随机的一个集合
     img_batch, label_batch = tf.train.shuffle_batch([img, label],
-                                                    batch_size=8, capacity=2000,
-                                                    min_after_dequeue=1000)
+                                                    batch_size=batch_size, capacity=2000,
+                                                    min_after_dequeue=1000,num_threads=2)
+
+    return img_batch, label_batch
+
+def test_read_tfrecords():
+    #启动tf.Session后，tfrecords将不断pop出文件名
+    tfr_fn='../data/train_shuffle.tfrecords'#'data_small/train.tfrecords'
+    #img, label = read_and_decode(tfr_fn)
+    # 使用shuffle_batch可以随机打乱输入
+    #img_batch, label_batch = tf.train.shuffle_batch([img, label],
+    #                                                batch_size=8, capacity=2000,
+    #                                                min_after_dequeue=1000)
+    img_batch_queue, label_batch_queue = read_tfr_queue(tfr_fn,8)
     # min_after_dequeue,出队列后，队列最小有多长。与train数据、batch_size有关。如果有tfr train有1000张dog，1000张cat，只各取500张出来训
     # bacth_size，一次出8张，为随机的一个集合
     init = tf.initialize_all_variables()
+    #因为使用了num_epochs
+    init_local= tf.initialize_local_variables()
+
     with tf.Session() as sess:
         sess.run(init)
+        sess.run(init_local)
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
-        # threads = tf.train.start_queue_runners(sess=sess)
+        #threads = tf.train.start_queue_runners(sess=sess)
         try:
-            # for i in range(3):
-            step = 0
-            step_wanted = 100
-            while (not coord.should_stop()) and (step < step_wanted):
-                step += 1
-                val, l = sess.run([img_batch, label_batch])
+            #for i in range(3):
+            step=0
+            step_wanted=1
+            while(not coord.should_stop()) and (step < step_wanted):
+                step+=1
+                val, l = sess.run([img_batch_queue, label_batch_queue])
                 # 我们也可以根据需要对val， l进行处理
                 # l = to_categorical(l, 12)
+                print(val.shape, l)
+                if((1 in l) and (0 in l) ):
 
-                if ((1 in l) and (0 in l)):
-                    print(val.shape, l)
                     for j in range(3):
                         Image.fromarray(((val[j] + 0.5) * 255).astype(np.uint8)).show()
         except tf.errors.OutOfRangeError:
-            print('Done pop out all data in the tfrecords')
+            print('Done pop out all data in the tfrecords' )
         finally:
             coord.request_stop()
             print("DEBUG: try to finally")
         coord.join(threads)
+
 
 if __name__ == "__main__":
     #read_and_save_data()
