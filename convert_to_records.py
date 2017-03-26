@@ -17,6 +17,9 @@ DATA_DIR = '../data/'
 TRAIN_DATA_PATH = '../data/train/'
 #TEST_DATA_PATH = '../data/test/'
 
+#if True, all train image will be shuffled. if False, the file queue will pop all cat and then all dog
+SHUFFLE_IMAGE=True
+
 IMG_HEIGHT = int(128)
 IMG_WIDTH = int(128)
 IMG_CHANNELS = 3
@@ -61,7 +64,7 @@ def convert_to(images, labels, name):
 
 def main(argv):
     train_images, train_labels = manage_images.read_images(TRAIN_DATA_PATH, IMG_CLASSES,
-                                                           IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS,shuffle=True)
+                                                           IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS,shuffle=SHUFFLE_IMAGE)
     #test_images, test_labels = manage_images.read_images(TEST_DATA_PATH, IMG_CLASSES,
     #                                                     IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
     ## print(train_labels)
