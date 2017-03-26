@@ -7,9 +7,10 @@ import model_cnn
 import math
 import tensorflow as tf
 import DataManager
+import train_cnn
 
 #NUM_TRAIN_EXAMPLES = read_data.NUM_TRAIN_EXAMPLES
-NUM_VALIDATION_EXAMPLES = 32
+NUM_VALIDATION_EXAMPLES = 16
 #NUM_TEST_EXAMPLES = read_data.NUM_TEST_EXAMPLES
 EVAL_DATA_DIR = 'tmp/eval_data'
 BATCH_SIZE = 16
@@ -23,9 +24,9 @@ def evaluate(data_set, checkpoint_dir = 'tmp/train_data'):
         # validation set is 10 times smaller than the training set
         #images, labels = read_data.inputs(data_set=data_set, batch_size=BATCH_SIZE, num_epochs=None)
         if(data_set=="train"):
-            images, labels =DataManager.read_tfr_queue(DataManager.TFR_SAVE_DIR + 'train_unshuffle.tfrecords',BATCH_SIZE)
+            images, labels =DataManager.read_tfr_queue(train_cnn.DATA_SOURCE_TRAIN,BATCH_SIZE)
         else:
-            images, labels = DataManager.read_tfr_queue(DataManager.TFR_SAVE_DIR + 'validation_unshuffle.tfrecords', BATCH_SIZE)
+            images, labels = DataManager.read_tfr_queue(DataManager.TFR_SAVE_DIR + train_cnn.DATA_SOURCE_VALIDATION, BATCH_SIZE)
         logits = model_cnn.inference(images)
         accuracy_curr_batch = model_cnn.evaluation(logits, labels)
 

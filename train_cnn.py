@@ -19,18 +19,24 @@ import DataManager
 TRAIN_DATA_DIR = 'tmp/train_data/'
 CHECKPOINT_FILE = 'model.ckpt'
 CHECKPOINT_FILE_PATH = os.path.join(TRAIN_DATA_DIR, CHECKPOINT_FILE)
-BATCH_SIZE = model_cnn.BATCH_SIZE
 
-NUM_EPOCHS = 3  #暂时没用
+
+#parameters for training
+DATA_SOURCE_TRAIN =DataManager.TFR_SAVE_DIR + 'train_shuffle.tfrecords'
+DATA_SOURCE_VALIDATION =DataManager.TFR_SAVE_DIR + 'validation_shuffle.tfrecords'
 
 NUM_TRAIN_EXAMPLES = model_cnn.NUM_TRAIN_EXAMPLES
+BATCH_SIZE = model_cnn.BATCH_SIZE
+NUM_EPOCHS = 3  #暂时没用
+#NUM_VALIDATION_EXAMPLES = 32
 NUM_TRAIN_STEP = model_cnn.NUM_TRAIN_STEP
+#LR = 0.001
 
 
 def run_training():
     with tf.Graph().as_default():
         #train_images, train_labels = read_data.inputs(data_set='train', batch_size=BATCH_SIZE, num_epochs=1)
-        train_images, train_labels = DataManager.read_tfr_queue(DataManager.TFR_SAVE_DIR + 'train_unshuffle.tfrecords',BATCH_SIZE)
+        train_images, train_labels = DataManager.read_tfr_queue(DATA_SOURCE_TRAIN,BATCH_SIZE)
         train_logits = model_cnn.inference(train_images)
         train_accuracy = model_cnn.evaluation(train_logits, train_labels)
         tf.summary.scalar('train_accuracy', train_accuracy)
@@ -66,13 +72,13 @@ def run_training():
                 duration = time.time() - start_time
                 assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
 
-                if step % 2 == 0:
-                    print('Step %d : loss = %.5f , training accuracy = %.1f (%.3f sec)'
-                          % (step, loss_value, train_acc_val, duration))
+                if step %2:#step % 2 == 0:
+                    print('Step %d, %d example : loss = %.5f , training accuracy = %.1f (%.3f sec)'
+                          % (step, (step+1)*BATCH_SIZE,loss_value, train_acc_val, duration))
                     summary_str = sess.run(summary_op)
                     summary_writer.add_summary(summary_str, step)
 
-                if step % num_iter_per_epoch == 0 and step > 0: # Do not save for step 0
+                if (step+1) % num_iter_per_epoch == 0 and step > 0: # Do not save for step 0
                     num_epochs = int(step / num_iter_per_epoch)
                     saver.save(sess, CHECKPOINT_FILE_PATH, global_step=step)
                     print('epochs done on training dataset = %d' % num_epochs)
