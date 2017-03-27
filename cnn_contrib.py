@@ -209,7 +209,7 @@ def main(unused_argv):
 
 
   # Create the Estimator
-  mnist_classifier = learn.Estimator(
+  classifier = learn.Estimator(
       model_fn=cnn_model_fn, model_dir="/tmp/dc_convnet_model")
 
   # Set up logging for predictions
@@ -219,22 +219,27 @@ def main(unused_argv):
       tensors=tensors_to_log, every_n_iter=50)
 
   # Train the model
-  mnist_classifier.fit(
+  classifier.fit(
       x=train_data,
       y=train_labels,
       batch_size=BATCH_SIZE,
       steps=NUM_TRAIN_DATA * NUM_EPOCH / BATCH_SIZE,
-      monitors=[logging_hook,validation_monitor])
+      monitors=[validation_monitor])
+
+  accuracy_score = classifier.evaluate(
+      x=eval_data, y=eval_labels)["accuracy"]
+  print("Accuracy: {0:f}".format(accuracy_score))
 
   # Configure the accuracy metric for evaluation
+  '''
   metrics = {
       "accuracy":
           learn.MetricSpec(
               metric_fn=tf.metrics.accuracy, prediction_key="classes"),
   }
-
+  '''
   # Evaluate the model and print results
-  eval_results = mnist_classifier.evaluate(
+  eval_results = classifier.evaluate(
       x=eval_data, y=eval_labels, metrics=metrics)
   #print(eval_results)
 
