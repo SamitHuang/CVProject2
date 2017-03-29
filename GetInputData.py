@@ -4,14 +4,13 @@ import os
 import numpy as np
 import random
 import cv2
-#import matplotlib.pyplot as plt
 from PIL import Image, ImageEnhance, ImageFilter
 import tensorflow as tf
 
 #data setting
 TRAIN_DATA_DIR='../data/train/'
-NUM_TRAIN = 2400
-NUM_TEST = 500
+NUM_TRAIN = 20000
+NUM_TEST = 600
 NUM_TRAIN_DOGS = NUM_TRAIN/2
 NUM_TRAIN_CATS = NUM_TRAIN/2
 NUM_TEST_DOGS=NUM_TEST/2

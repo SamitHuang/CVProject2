@@ -29,7 +29,7 @@ tf.logging.set_verbosity(tf.logging.INFO)
 
 BATCH_SIZE = 16
 NUM_TRAIN_DATA = GetInputData.NUM_TRAIN
-NUM_EPOCH = 10
+NUM_EPOCH = 20
 
 def cnn_model_fn(features, labels, mode):
   """Model function for CNN."""
@@ -148,6 +148,7 @@ def cnn_model_fn(features, labels, mode):
 
   # Calculate Loss (for both TRAIN and EVAL modes)
   if mode != learn.ModeKeys.INFER:
+    #loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=labels,logits=logits))
     onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=2)
     loss = tf.losses.softmax_cross_entropy(
         onehot_labels=onehot_labels, logits=logits)
@@ -157,7 +158,7 @@ def cnn_model_fn(features, labels, mode):
     train_op = tf.contrib.layers.optimize_loss(
         loss=loss,
         global_step=tf.contrib.framework.get_global_step(),
-        learning_rate=0.0001,
+        learning_rate=0.00005,
         optimizer="Adam")#"SGD")
 
   # Generate Predictions
@@ -176,24 +177,23 @@ def cnn_model_fn(features, labels, mode):
 def main(unused_argv):
   # Load training and eval data
   #mnist = learn.datasets.load_dataset("mnist")
-
+  
   #train_data = mnist.train.images  # Returns np.array
   #train_labels = np.asarray(mnist.train.labels, dtype=np.int32)
   train_data,train_labels,eval_data,eval_labels = GetInputData.GetTrainAndValidateData()
   train_data = np.asarray(train_data,dtype=np.float32)
+  #train_data = train_data /255.0 - 0.5;
   eval_data = np.asarray(eval_data,dtype=np.float32)
+  #eval_data = eval_data/255.0 - 0.5;
   train_labels = np.asarray(train_labels,dtype=np.int32)
-  eval_labels = np.asarray(train_labels, dtype=np.int32)
+  eval_labels = np.asarray(eval_labels, dtype=np.int32)
   print(train_data.shape)
-
+  
   validation_metrics = {
       "accuracy_eval": MetricSpec(
           metric_fn=tf.contrib.metrics.streaming_accuracy,
           prediction_key="classes"),
-      "recall": MetricSpec(
-          metric_fn=tf.contrib.metrics.streaming_recall,
-          prediction_key="classes"),
-      "precision_eval": MetricSpec(
+      "precision_val": MetricSpec(
           metric_fn=tf.contrib.metrics.streaming_precision,
           prediction_key="classes")
   }
@@ -203,21 +203,22 @@ def main(unused_argv):
       every_n_steps=50,
       metrics=validation_metrics,
       early_stopping_metric="loss",
-      early_stopping_metric_minimize=True,
-      early_stopping_rounds=200)
+      early_stopping_metric_minimize=True,  #True
+      early_stopping_rounds=1000)
   #eval_data = mnist.test.images  # Returns np.array
-
+  
 
   # Create the Estimator
   classifier = learn.Estimator(
-      model_fn=cnn_model_fn, model_dir="/tmp/dc_convnet_model")
+      model_fn=cnn_model_fn, model_dir="/tmp/dog_cat_model_29new"
+      ,config=tf.contrib.learn.RunConfig(save_checkpoints_secs=4))
 
   # Set up logging for predictions
   # Log the values in the "Softmax" tensor with label "probabilities"
   tensors_to_log = {"probabilities": "softmax_tensor"}
   logging_hook = tf.train.LoggingTensorHook(
-      tensors=tensors_to_log, every_n_iter=50)
-
+      tensors=tensors_to_log, every_n_iter=50,)
+  
   # Train the model
   classifier.fit(
       x=train_data,
@@ -225,23 +226,34 @@ def main(unused_argv):
       batch_size=BATCH_SIZE,
       steps=NUM_TRAIN_DATA * NUM_EPOCH / BATCH_SIZE,
       monitors=[validation_monitor])
+  
 
+  print(NUM_TRAIN_DATA * NUM_EPOCH / BATCH_SIZE)
+  '''
   accuracy_score = classifier.evaluate(
       x=eval_data, y=eval_labels)["accuracy"]
   print("Accuracy: {0:f}".format(accuracy_score))
-
-  # Configure the accuracy metric for evaluation
   '''
+  # Configure the accuracy metric for evaluation
+
   metrics = {
-      "accuracy":
+      "accuracy_final":
           learn.MetricSpec(
               metric_fn=tf.metrics.accuracy, prediction_key="classes"),
   }
-  '''
+
   # Evaluate the model and print results
+  cnt1=0
+  cnt0=0
+  for i in train_labels:
+      if (i==1) :
+          cnt1+=1
+      if(i==0):
+          cnt0+=1
+  print(cnt1,cnt0)
   eval_results = classifier.evaluate(
-      x=eval_data, y=eval_labels, metrics=metrics)
-  #print(eval_results)
+          x=eval_data, y=eval_labels, metrics=metrics)
+  print(eval_results)
 
 
 if __name__ == "__main__":
