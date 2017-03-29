@@ -16,8 +16,12 @@ NUM_TRAIN_CATS = NUM_TRAIN/2
 NUM_TEST_DOGS=NUM_TEST/2
 NUM_TEST_CATS=NUM_TEST/2
 
-IMAGE_SIZE_WIDTH = 64 #larger scale can improve accuracy till 350, concluded by a guy
-IMAGE_SIZE_HEIGTH = 64
+IMAGE_SIZE_WIDTH = 128 #larger scale can improve accuracy till 350, concluded by a guy
+IMAGE_SIZE_HEIGTH = 128
+
+TEST_DATA_DIR='../data/test/'
+IS_LIMIT_NUM_TEST_UNKNOWN=False
+NUM_TEST_UNKNOWN = 111 #12500
 
 def GetImageLable(imgName):
     '''
@@ -88,3 +92,39 @@ def GetTrainAndValidateData():
 
     #return np.array(trainData),np.array(testData)
     return np.array(trainX),np.array(trainY),np.array(testX),np.array(testY)
+
+'''
+def GetTestData():
+    #for (i, imgName) in enumerate(os.listdir(TRAIN_DATA_DIR)):
+    img_names =os.listdir(TEST_DATA_DIR)[:NUM_TEST] # [TEST_DATA_DIR + i for i in ]
+    test_data=[]
+    img_id=[]
+    for imgn in img_names:
+        dat = ProcessImage(TEST_DATA_DIR + imgn)
+        test_data.append(dat)
+        img_id.append(imgn.split('.')[0])
+    np.save('test_data.npy', test_data)
+    np.save('test_data_id.npy', img_id)
+    return np.array(test_data,dtype=np.float32),img_id
+'''
+def GetTestData():
+    test_data=[]
+    img_ids = []
+    for imgn in os.listdir(TEST_DATA_DIR):
+        img_id = imgn.split('.')[0]
+        img_ids.append(int(img_id))
+    img_ids.sort()
+    if(IS_LIMIT_NUM_TEST_UNKNOWN):
+        img_ids=img_ids[0:NUM_TEST_UNKNOWN]
+    for img_id in img_ids:
+        dat = ProcessImage(TEST_DATA_DIR + str(img_id) + '.jpg')
+        test_data.append(dat)
+        #img_id.append(imgn.split('.')[0])
+    np.save('test_data.npy', test_data)
+    np.save('test_data_id.npy', img_ids)
+    return np.array(test_data,dtype=np.float32),img_ids
+
+
+
+if __name__ == "__main__":
+   GetTestData()

@@ -1,17 +1,7 @@
-#  Copyright 2016 The TensorFlow Authors. All Rights Reserved.
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
-"""Convolutional Neural Network Estimator for MNIST, built with tf.layers."""
+'''
+#CNN for dogs_vs_cats
+#by  HUANG, Yongixang
+'''
 
 from __future__ import absolute_import
 from __future__ import division
@@ -19,6 +9,7 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
+import math
 
 from tensorflow.contrib import learn
 from tensorflow.contrib.learn.python.learn.estimators import model_fn as model_fn_lib
@@ -29,14 +20,16 @@ tf.logging.set_verbosity(tf.logging.INFO)
 
 BATCH_SIZE = 16
 NUM_TRAIN_DATA = GetInputData.NUM_TRAIN
-NUM_EPOCH = 20
+NUM_EPOCH = 40
+
+#MODEL_DIR = 
 
 def cnn_model_fn(features, labels, mode):
   """Model function for CNN."""
   # Input Layer
   # Reshape X to 4-D tensor: [batch_size, width, height, channels]
   # MNIST images are 28x28 pixels, and have one color channel
-  input_layer = tf.reshape(features, [-1, 64, 64, 3])
+  input_layer = tf.reshape(features, [-1, GetInputData.IMAGE_SIZE_WIDTH,GetInputData.IMAGE_SIZE_HEIGTH, 3])
 
   # Convolutional Layer #1
   # Computes 32 features using a 5x5 filter with ReLU activation.
@@ -206,13 +199,11 @@ def main(unused_argv):
       early_stopping_metric_minimize=True,  #True
       early_stopping_rounds=1000)
   #eval_data = mnist.test.images  # Returns np.array
-  
 
   # Create the Estimator
   classifier = learn.Estimator(
-      model_fn=cnn_model_fn, model_dir="/tmp/dog_cat_model_29new"
+      model_fn=cnn_model_fn, model_dir="/tmp/dog_cat_model_pix128"
       ,config=tf.contrib.learn.RunConfig(save_checkpoints_secs=4))
-
   # Set up logging for predictions
   # Log the values in the "Softmax" tensor with label "probabilities"
   tensors_to_log = {"probabilities": "softmax_tensor"}
@@ -227,13 +218,8 @@ def main(unused_argv):
       steps=NUM_TRAIN_DATA * NUM_EPOCH / BATCH_SIZE,
       monitors=[validation_monitor])
   
-
-  print(NUM_TRAIN_DATA * NUM_EPOCH / BATCH_SIZE)
-  '''
-  accuracy_score = classifier.evaluate(
-      x=eval_data, y=eval_labels)["accuracy"]
-  print("Accuracy: {0:f}".format(accuracy_score))
-  '''
+  print("number of total train step=%d"%(NUM_TRAIN_DATA * NUM_EPOCH / BATCH_SIZE))
+  
   # Configure the accuracy metric for evaluation
 
   metrics = {
@@ -255,6 +241,39 @@ def main(unused_argv):
           x=eval_data, y=eval_labels, metrics=metrics)
   print(eval_results)
 
+def test_predict():
+    test_data,img_ids=GetInputData.GetTestData()
+    with open('submission_file.csv','w') as f:
+        f.write('id,label\n')
+    #print(img_id)
+    classifier = learn.Estimator(
+        model_fn=cnn_model_fn, model_dir="/tmp/dog_cat_model_pix128"
+        )
+    #there are 12500 images in the test dataset 
+    PRED_BATCH_SIZE=100
+    div_step = int(math.ceil(float(len(img_ids))/PRED_BATCH_SIZE))
+    for i in  range(div_step):
+        offset=i * PRED_BATCH_SIZE
+        if(offset + PRED_BATCH_SIZE <= len(img_ids)):
+            img_ids_step = img_ids[offset : offset + PRED_BATCH_SIZE]
+            preds = list(classifier.predict(test_data[offset : offset + PRED_BATCH_SIZE]))
+        else:
+            img_ids_step = img_ids[offset:]
+            preds = list(classifier.predict(test_data[offset : ]))
+        write_csv(img_ids_step,preds)
+        
+def write_csv(img_ids,preds):
+    with open('submission_file.csv','a') as f:
+        for (i,res_one) in enumerate(preds):
+            img_id=img_ids[i]
+            #prob=round(res_one['probabilities'][1],8)
+            prob=res_one['probabilities'][1]
+            classes = res_one['classes']
+            print(img_id,classes)
+            #f.write('{},{}\n'.format(img_id,prob))
+            f.write('%d,%.8f\n'%(img_id,prob))
+
 
 if __name__ == "__main__":
-  tf.app.run()
+  #tf.app.run()
+  test_predict()
