@@ -10,7 +10,7 @@ import tensorflow as tf
 #data setting
 TRAIN_DATA_DIR='../data/train/'
 NUM_TRAIN = 20000
-NUM_TEST = 600
+NUM_TEST = 1000
 NUM_TRAIN_DOGS = NUM_TRAIN/2
 NUM_TRAIN_CATS = NUM_TRAIN/2
 NUM_TEST_DOGS=NUM_TEST/2
@@ -93,20 +93,6 @@ def GetTrainAndValidateData():
     #return np.array(trainData),np.array(testData)
     return np.array(trainX),np.array(trainY),np.array(testX),np.array(testY)
 
-'''
-def GetTestData():
-    #for (i, imgName) in enumerate(os.listdir(TRAIN_DATA_DIR)):
-    img_names =os.listdir(TEST_DATA_DIR)[:NUM_TEST] # [TEST_DATA_DIR + i for i in ]
-    test_data=[]
-    img_id=[]
-    for imgn in img_names:
-        dat = ProcessImage(TEST_DATA_DIR + imgn)
-        test_data.append(dat)
-        img_id.append(imgn.split('.')[0])
-    np.save('test_data.npy', test_data)
-    np.save('test_data_id.npy', img_id)
-    return np.array(test_data,dtype=np.float32),img_id
-'''
 def GetTestData():
     test_data=[]
     img_ids = []

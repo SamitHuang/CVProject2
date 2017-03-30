@@ -15,6 +15,7 @@ from tensorflow.contrib import learn
 from tensorflow.contrib.learn.python.learn.estimators import model_fn as model_fn_lib
 from tensorflow.contrib.learn.python.learn.metric_spec import MetricSpec
 import GetInputData
+import sys
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -276,4 +277,9 @@ def write_csv(img_ids,preds):
 
 if __name__ == "__main__":
   #tf.app.run()
-  test_predict()
+  #test_predict()
+  if(len(sys.argv)>1):
+      if(sys.argv[1]=='train'):
+        tf.app.run()
+      if(sys.argv[1]=='predict'):
+        test_predict()
